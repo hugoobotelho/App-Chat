@@ -1,5 +1,3 @@
-package servidor;
-
 import java.util.*;
 
 public class GrupoManager {

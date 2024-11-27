@@ -1,3 +1,4 @@
+
 /* ***************************************************************
 * Autor............: Hugo Botelho Santana
 * Matricula........: 202210485
@@ -34,15 +35,40 @@ public class TelaInicio {
         // Configuração do Botão Entrar
         Button botaoEntrar = new Button("Entrar");
         botaoEntrar.setStyle(
-            "-fx-background-color: #E5AF18; " +
-            "-fx-text-fill: #333333; " +
-            "-fx-font-weight: bold; " +
-            "-fx-font-size: 16px; " +
-            "-fx-background-radius: 10px; " +
-            "-fx-pref-width: 300px; -fx-padding: 10px; -fx-cursor: hand;"
-        );
+                "-fx-background-color: #E5AF18; " +
+                        "-fx-text-fill: #333333; " +
+                        "-fx-font-weight: bold; " +
+                        "-fx-font-size: 16px; " +
+                        "-fx-background-radius: 10px; " +
+                        "-fx-pref-width: 300px; -fx-padding: 10px; -fx-cursor: hand;");
+        // botaoEntrar.setOnAction(e -> {
+        // app.setNomeUsuario(campoUsuario.getText());
+        // TelaMeusGrupos telaMeusGrupos = new TelaMeusGrupos(app);
+        // app.getRoot().getChildren().setAll(telaMeusGrupos.getLayout());
+        // });
+        // Adicionar ação de verificação ao clicar em "Entrar"
         botaoEntrar.setOnAction(e -> {
-            app.setNomeUsuario(campoUsuario.getText());
+            String ipServidor = campoIP.getText().trim();
+            String nomeUsuario = campoUsuario.getText().trim();
+
+            // Verifica se o IP do servidor e o nome de usuário estão preenchidos
+            if (ipServidor.isEmpty() || nomeUsuario.isEmpty()) {
+                mostrarMensagemErro("Preencha todos os campos.");
+                return;
+            }
+
+            // Verifica se o IP do servidor tem formato válido (exemplo básico de IP)
+            if (!isIPValido(ipServidor)) {
+                mostrarMensagemErro("IP do servidor inválido.");
+                return;
+            }
+
+            // Define os dados para a aplicação
+            app.setNomeUsuario(nomeUsuario);
+            app.setIpServidor(ipServidor);
+            app.criarClientes(ipServidor, nomeUsuario);
+
+            // Tenta carregar a próxima tela (Tela de Grupos)
             TelaMeusGrupos telaMeusGrupos = new TelaMeusGrupos(app);
             app.getRoot().getChildren().setAll(telaMeusGrupos.getLayout());
         });
@@ -61,6 +87,41 @@ public class TelaInicio {
 
         // Remover foco inicial dos inputs
         Platform.runLater(() -> layout.requestFocus());
+    }
+
+    /**
+     * Valida o formato básico de um IP (ex: 192.168.0.1).
+     * 
+     * @param ip O IP a ser validado.
+     * @return true se o IP for válido, falso caso contrário.
+     */
+    private boolean isIPValido(String ip) {
+        // Exemplo simples de verificação de formato de IP
+        String regex = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+        return ip.matches(regex);
+    }
+
+    /**
+     * Exibe uma mensagem de erro ao usuário.
+     * 
+     * @param mensagem A mensagem de erro a ser exibida.
+     */
+    private void mostrarMensagemErro(String mensagem) {
+        Label mensagemErro = new Label(mensagem);
+        mensagemErro.setStyle("-fx-text-fill: red; -fx-font-size: 14px; -fx-font-weight: bold;");
+        layout.getChildren().add(mensagemErro);
+
+        // Remover mensagem de erro após 3 segundos
+        Platform.runLater(() -> {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(3000); // Aguardar 3 segundos
+                    Platform.runLater(() -> layout.getChildren().remove(mensagemErro));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        });
     }
 
     /**
@@ -86,7 +147,6 @@ public class TelaInicio {
 
         return campo;
     }
-    
 
     public VBox getLayout() {
         return layout;

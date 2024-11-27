@@ -1,12 +1,13 @@
-package servidor;
-
 import java.net.*;
+import java.util.Map;
 
 public class ServidorUDP {
     private final GrupoManager grupoManager;
+    private final Map<String, Usuario> usuarios;
 
-    public ServidorUDP() {
-        this.grupoManager = new GrupoManager();
+    public ServidorUDP(GrupoManager grupoManager, Map<String, Usuario> usuarios) {
+        this.grupoManager = grupoManager;
+        this.usuarios = usuarios;
     }
 
     public void iniciar() {
@@ -23,22 +24,20 @@ public class ServidorUDP {
                 servidorSocket.receive(pacoteRecebido);
 
                 // Inicia uma nova thread para processar a mensagem recebida
-                new Thread(new ProcessaMensagem(pacoteRecebido, servidorSocket, grupoManager)).start();
+                new Thread(new ProcessaMensagem(pacoteRecebido, servidorSocket)).start();
             }
         } catch (Exception e) {
             System.err.println("Erro no servidor UDP: " + e.getMessage());
         }
     }
 
-    private static class ProcessaMensagem implements Runnable {
+    private class ProcessaMensagem implements Runnable {
         private final DatagramPacket pacoteRecebido;
         private final DatagramSocket servidorSocket;
-        private final GrupoManager grupoManager;
 
-        public ProcessaMensagem(DatagramPacket pacoteRecebido, DatagramSocket servidorSocket, GrupoManager grupoManager) {
+        public ProcessaMensagem(DatagramPacket pacoteRecebido, DatagramSocket servidorSocket) {
             this.pacoteRecebido = pacoteRecebido;
             this.servidorSocket = servidorSocket;
-            this.grupoManager = grupoManager;
         }
 
         @Override
@@ -46,40 +45,52 @@ public class ServidorUDP {
             try {
                 // Converte os dados recebidos em String
                 String mensagemRecebida = new String(pacoteRecebido.getData(), 0, pacoteRecebido.getLength());
-                System.out.println("Mensagem recebida de " + pacoteRecebido.getAddress() + ":" + pacoteRecebido.getPort());
-                System.out.println("Conteúdo: " + mensagemRecebida);
+                System.out.println(
+                        "Mensagem recebida de " + pacoteRecebido.getAddress() + ":" + pacoteRecebido.getPort());
+                System.out.println("Conteudo: " + mensagemRecebida);
 
-                // Formato esperado da mensagem: "grupo|usuario|mensagem"
-                String[] partes = mensagemRecebida.split("\\|", 3);
-                if (partes.length != 3) {
-                    System.err.println("Formato inválido de mensagem");
+                // Divide a mensagem pela estrutura definida:
+                // "SEND|NomeGrupo|NomeUsuario|Mensagem"
+                String[] partes = mensagemRecebida.split("\\|", 4);
+                if (partes.length != 4) {
+                    System.err.println("Formato inválido ou tipo de mensagem desconhecido.");
                     return;
                 }
 
-                String nomeGrupo = partes[0];
-                String nomeUsuario = partes[1];
-                String mensagem = partes[2];
+                // Extração dos campos
+                String tipoMensagem = partes[0];
+                String nomeGrupo = partes[1];
+                String nomeUsuario = partes[2];
+                String conteudoMensagem = partes[3];
 
-                // Cria o objeto do usuário remetente
-                Usuario remetente = new Usuario(nomeUsuario, pacoteRecebido.getAddress(), pacoteRecebido.getPort());
-
-                // Envia a mensagem para todos os membros do grupo, exceto o remetente
-                for (Usuario usuario : grupoManager.obterMembros(nomeGrupo)) {
-                    if (!usuario.equals(remetente)) {
-                        byte[] dadosSaida = (nomeUsuario + ": " + mensagem).getBytes();
-                        DatagramPacket pacoteResposta = new DatagramPacket(
-                                dadosSaida,
-                                dadosSaida.length,
-                                usuario.getEndereco(),
-                                usuario.getPorta()
-                        );
-                        servidorSocket.send(pacoteResposta);
+                // Verifica se a mensagem é do tipo SEND
+                if (tipoMensagem.equals("SEND")) {
+                    // Sincroniza para garantir consistência na manipulação de usuários
+                    Usuario remetente;
+                    synchronized (usuarios) {
+                        remetente = usuarios.computeIfAbsent(nomeUsuario,
+                                k -> new Usuario(nomeUsuario, pacoteRecebido.getAddress(), pacoteRecebido.getPort()));
                     }
+
+                    // // Adiciona o remetente ao grupo (se necessário)
+                    // synchronized (grupoManager) {
+                    // grupoManager.adicionarUsuario(nomeGrupo, remetente);
+                    // }
+
+                    // Reencaminha a mensagem para todos os membros do grupo, exceto o remetente
+                    for (Usuario usuario : grupoManager.obterMembros(nomeGrupo)) {
+                        System.out.println("Vai enviar " + conteudoMensagem + " para o usuario: " + usuario.getNome());
+                        // if (!usuario.equals(remetente)) {
+                        InetAddress enderecoCliente = usuario.getEndereco();
+                        int portaCliente = usuario.getPorta();
+                        byte[] dadosSaida = String.format("SEND|%s|%s|%s", nomeGrupo, nomeUsuario, conteudoMensagem).getBytes();
+                        DatagramPacket pacoteResposta = new DatagramPacket(dadosSaida, dadosSaida.length, enderecoCliente, portaCliente);
+                        servidorSocket.send(pacoteResposta);
+                        // }
+                    }
+                } else {
+                    System.err.println("Tipo de mensagem desconhecido: " + tipoMensagem);
                 }
-
-                // Adiciona o remetente ao grupo (se necessário)
-                grupoManager.adicionarUsuario(nomeGrupo, remetente);
-
             } catch (Exception e) {
                 System.err.println("Erro ao processar mensagem: " + e.getMessage());
             }

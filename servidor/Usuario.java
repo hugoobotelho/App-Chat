@@ -1,5 +1,3 @@
-package servidor;
-
 import java.net.InetAddress;
 import java.util.Objects;
 

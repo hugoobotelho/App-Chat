@@ -29,7 +29,11 @@ public class TelaMeusGrupos {
     private static List<String> grupos = new ArrayList<>(); // Lista dinâmica de grupos
     private static Map<String, HistoricoMensagens> historicosMensagens = new HashMap<>();
 
+    private Principal app; // Instância principal do aplicativo
+
     public TelaMeusGrupos(Principal app) {
+        this.app = app;
+
         layout.setStyle("-fx-padding: 20; -fx-alignment: top-left;");
 
         // Configuração do Título com Estilo Diferente para "Meus" e "Grupos"
@@ -102,6 +106,9 @@ public class TelaMeusGrupos {
                     renderizarGrupos(app); // Atualiza a interface
                     containerAdicionarGrupo.setVisible(false); // Esconde o container novamente
                     inputNomeGrupo.clear(); // Limpa o campo de texto
+
+                    // Enviar a APDU de tipo "JOIN" para o servidor TCP
+                    enviarAPDUJoin(nomeGrupo);
 
                     // Remove a mensagem de erro caso exista
                     containerAdicionarGrupo.getChildren().removeIf(
@@ -194,6 +201,26 @@ public class TelaMeusGrupos {
         });
 
         return campo;
+    }
+
+    /**
+     * Enviar a APDU de tipo "JOIN" para o servidor TCP.
+     * 
+     * @param nomeGrupo Nome do grupo a ser adicionado.
+     */
+    // Exemplo de envio de APDU com tratamento de exceção
+    private void enviarAPDUJoin(String nomeGrupo) {
+        String nomeUsuario = app.getNomeUsuario();
+
+        try {
+            // Envio via ClienteTCP - agora utilizando o ClienteTCP configurado
+            app.getClienteTCP().enviarAPDUJoin(nomeUsuario, nomeGrupo);
+        } catch (Exception e) {
+            // Exibir mensagem de erro se falhar ao enviar a APDU
+            Label mensagemErro = new Label("Erro ao conectar ao servidor. Tente novamente.");
+            mensagemErro.setStyle("-fx-text-fill: red; -fx-font-size: 14px;");
+            containerAdicionarGrupo.getChildren().add(mensagemErro);
+        }
     }
 
 }

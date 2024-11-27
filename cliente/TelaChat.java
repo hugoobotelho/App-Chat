@@ -13,8 +13,11 @@ import javafx.scene.layout.Priority;
 public class TelaChat {
     private VBox layout = new VBox(10); // Layout da tela Chat
     private static HistoricoMensagens historicoMensagens;
+    private Principal app; // Instância principal do aplicativo
+
 
     public TelaChat(Principal app, String nomeGrupo, HistoricoMensagens historicoMensagens) {
+        this.app = app;
         // Remover padding do layout principal
         layout.setStyle("-fx-alignment: top-center;");
 
@@ -38,11 +41,10 @@ public class TelaChat {
         Label nomeGrupoTexto = new Label(nomeGrupo);
         nomeGrupoTexto.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #E5AF18;");
         nomeGrupoTexto.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
-        nomeGrupoTexto.setMaxWidth(400); // Definir largura máxima para o título (ajuste conforme necessário)
-        nomeGrupoTexto.setWrapText(true); // Permite quebrar o texto se for muito longo
+        nomeGrupoTexto.setMaxWidth(400); // Define largura máxima
+        nomeGrupoTexto.setWrapText(true); // Permite quebra de texto
 
-        // Garantir que o nome do grupo ocupe o máximo espaço disponível
-        HBox.setHgrow(nomeGrupoTexto, Priority.ALWAYS); // Faz o nome do grupo crescer e ficar centralizado
+        HBox.setHgrow(nomeGrupoTexto, Priority.ALWAYS);
 
         // icone de Sair do Grupo
         ImageView sairIcon = new ImageView(new Image("/img/sairIcon.png"));
@@ -52,124 +54,78 @@ public class TelaChat {
         botaoSair.setGraphic(sairIcon);
         botaoSair.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
         botaoSair.setOnAction(e -> {
-            // Lógica para sair do grupo
-            System.out.println("Saindo do grupo: " + nomeGrupo);
-
-            // Remover o grupo da lista em TelaMeusGrupos
+            enviarAPDULeave(nomeGrupo);
             TelaMeusGrupos.removerGrupo(nomeGrupo);
-
-            // Voltar para a tela de grupos
             TelaMeusGrupos telaMeusGrupos = new TelaMeusGrupos(app);
             app.getRoot().getChildren().setAll(telaMeusGrupos.getLayout());
         });
 
-        // Adicionando os elementos ao header
         header.getChildren().addAll(botaoVoltar, nomeGrupoTexto, botaoSair);
+
         // Criando a Lista de Mensagens
         VBox listaMensagens = new VBox(10);
-
-        // Carregar as mensagens armazenadas
+        listaMensagens.setStyle("-fx-padding: 10px; -fx-background-color: transparent;");
         for (Mensagem mensagem : historicoMensagens.getMensagens()) {
             listaMensagens.getChildren().add(criarComponenteMensagem(mensagem));
         }
 
-        // Adicionar a lista de mensagens dentro de um ScrollPane
         ScrollPane scrollMensagens = new ScrollPane(listaMensagens);
         scrollMensagens.setStyle("-fx-background: #F5F5F5; -fx-border-color: #F5F5F5;");
-        scrollMensagens.setFitToWidth(true); // Ajusta a largura do conteúdo ao ScrollPane
-        scrollMensagens.setPrefHeight(600); // Define a altura do ScrollPane
+        scrollMensagens.setFitToWidth(true);
+        scrollMensagens.setPrefHeight(600);
 
-        // Ajustar o estilo do VBox dentro do ScrollPane
-        listaMensagens.setStyle("-fx-padding: 10px; -fx-background-color: transparent;");
-
-        // Layout para enviar mensagem
-        HBox enviarMensagemLayout = new HBox(10); // Espaçamento de 10px entre ícone e campo de texto
+        HBox enviarMensagemLayout = new HBox(10);
         enviarMensagemLayout.setStyle("-fx-background-color: #E1E0E0; -fx-background-radius: 10px;");
-        enviarMensagemLayout.setPadding(new Insets(10, 20, 10, 20)); // Padding interno (top, right, bottom, left)
-        enviarMensagemLayout.setAlignment(Pos.CENTER_LEFT); // Centraliza o conteúdo verticalmente
+        enviarMensagemLayout.setPadding(new Insets(10, 20, 10, 20));
+        // Adiciona margens externas (espaço entre o HBox e outros elementos)
+        VBox.setMargin(enviarMensagemLayout, new Insets(10, 10, 10, 10));
+        enviarMensagemLayout.setAlignment(Pos.CENTER_LEFT);
 
-        //icone para o campo de mensagem
+        // icone do campo de mensagem
         ImageView iconeMensagem = new ImageView(new Image("/img/enviarIcon.png"));
-        iconeMensagem.setFitHeight(24); // Tamanho do ícone
+        iconeMensagem.setFitHeight(24);
         iconeMensagem.setFitWidth(24);
 
         // Campo de texto para digitar a mensagem
         TextField campoMensagem = criarCampoComPlaceholder("Mensagem");
-        campoMensagem.setMaxWidth(Double.MAX_VALUE); // Faz o campo ocupar o máximo de largura disponível
+        campoMensagem.setMaxWidth(Double.MAX_VALUE);
         campoMensagem.setStyle("-fx-background-color: #E1E0E0; -fx-font-size: 16px; -fx-padding: 8px;");
-
-        // Faz com que o campo cresça proporcionalmente
         HBox.setHgrow(campoMensagem, Priority.ALWAYS);
 
-        // Adiciona o evento para envio ao pressionar Enter
         campoMensagem.setOnKeyPressed(event -> {
             if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
                 String mensagem = campoMensagem.getText();
                 if (!mensagem.isEmpty()) {
-                    // Adicionar a nova mensagem ao histórico
-                    Mensagem novaMensagem = new Mensagem("Voce", mensagem, "07:00"); // Assumindo que o remetente é
-                                                                                     // "Você"
-                    historicoMensagens.adicionarMensagem(novaMensagem);
+                    try {
+                        // Enviar a mensagem para o servidor UDP
+                        // ClienteUDP clienteUDP = new ClienteUDP(app.getIpServidor(), 6789);
+                        String mensagemFormatada = "SEND|"+ nomeGrupo + "|" + app.getNomeUsuario() + "|" + mensagem;
+                        app.getClienteUDP().enviarMensagem(mensagemFormatada);
 
-                    // Criar o componente de mensagem e adicionar à tela
-                    listaMensagens.getChildren().add(criarComponenteMensagem(novaMensagem));
-
-                    // Scroll automático para a última mensagem
-                    scrollMensagens.setVvalue(1.0);
-
-                    // Limpar o campo de mensagem após envio
-                    campoMensagem.clear();
+                        // Adicionar a nova mensagem à lista
+                        Mensagem novaMensagem = new Mensagem("Voce", mensagem, "07:00");
+                        historicoMensagens.adicionarMensagem(novaMensagem);
+                        listaMensagens.getChildren().add(criarComponenteMensagem(novaMensagem));
+                        scrollMensagens.setVvalue(1.0);
+                        campoMensagem.clear();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("Erro ao enviar mensagem para o servidor: " + e.getMessage());
+                    }
                 }
             }
         });
 
-        // // Adicionando os elementos ao layout
-        // enviarMensagemLayout.getChildren().addAll(iconeMensagem, campoMensagem);
-
-        // // Adicionando margem ao layout principal
-        // VBox.setMargin(enviarMensagemLayout, new Insets(10, 10, 10, 10)); // Margem externa (top, right, bottom, left)
-
-        // // Adicionar os elementos ao layout principal
-        // layout.getChildren().addAll(header, scrollMensagens, enviarMensagemLayout);
-
-        // Button botaoEnviar = new Button("Enviar");
-        // botaoEnviar.setOnAction(e -> {
-        // String mensagem = campoMensagem.getText();
-        // if (!mensagem.isEmpty()) {
-        // // Adicionar a nova mensagem ao histórico
-        // Mensagem novaMensagem = new Mensagem("Voce", mensagem, "07:00"); // Assumindo
-        // que o remetente é "Você"
-        // historicoMensagens.adicionarMensagem(novaMensagem);
-
-        // // Criar o componente de mensagem e adicionar à tela
-        // listaMensagens.getChildren().add(criarComponenteMensagem(novaMensagem));
-
-        // // Scroll automático para a última mensagem
-        // scrollMensagens.setVvalue(1.0);
-
-        // // Limpar o campo de mensagem após envio
-        // campoMensagem.clear();
-        // }
-        // });
-
-        VBox.setMargin(enviarMensagemLayout, new Insets(10, 10, 10, 10)); // Margem externa (top, right, bottom, left)
-
         enviarMensagemLayout.getChildren().addAll(iconeMensagem, campoMensagem);
-
-        // Adicionar os elementos ao layout principal
         layout.getChildren().addAll(header, scrollMensagens, enviarMensagemLayout);
-
     }
 
-    // Cria um componente de mensagem (semelhante a do WhatsApp)
     private VBox criarComponenteMensagem(Mensagem mensagem) {
-        VBox componenteMensagem = new VBox(5); // Espaçamento entre os elementos
+        VBox componenteMensagem = new VBox(5);
 
-        // Nome do Remetente
         Label remetenteLabel = new Label(mensagem.getRemetente());
         remetenteLabel.setStyle("-fx-font-weight: 500; -fx-text-fill: #B4B4B4;");
 
-        // Conteúdo da mensagem
         Label conteudoMensagem = new Label(mensagem.getConteudo());
         conteudoMensagem.setStyle(
                 "-fx-background-color: #333333; " +
@@ -178,56 +134,61 @@ public class TelaChat {
                         "-fx-padding: 10px; " +
                         "-fx-background-radius: 10px; " +
                         "-fx-max-width: 250px; " +
-                        "-fx-wrap-text: true;" +
-                        "-fx-margin: 22px;"); // Adiciona margem de 22px
+                        "-fx-wrap-text: true;");
 
-        // Horário da mensagem
         Label horarioLabel = new Label(mensagem.getHora());
         horarioLabel.setStyle("-fx-font-weight: 500; -fx-text-fill: #B4B4B4;");
 
-        // Alinhar a mensagem à direita se for do usuário (você)
         if (mensagem.getRemetente().equals("Voce")) {
             componenteMensagem.setStyle("-fx-alignment: top-right;");
             conteudoMensagem.setStyle(
-                    "-fx-background-color: #E5AF18; " + // Cor de fundo diferente para o usuário
+                    "-fx-background-color: #E5AF18; " +
                             "-fx-text-fill: #333333; " +
                             "-fx-font-size: 16px; " +
                             "-fx-padding: 10px; " +
                             "-fx-background-radius: 10px; " +
                             "-fx-max-width: 250px; " +
-                            "-fx-wrap-text: true; " +
-                            "-fx-margin: 22px;");
-            remetenteLabel.setStyle("-fx-font-weight: 500; -fx-text-fill: #B4B4B4;");
-            horarioLabel.setStyle("-fx-font-weight: 500; -fx-text-fill: #B4B4B4;");
+                            "-fx-wrap-text: true;");
         } else {
-            // Para outras mensagens, elas ficam à esquerda
             componenteMensagem.setStyle("-fx-alignment: top-left;");
         }
 
-        // Adicionando o remetente, conteúdo e horário no VBox
         componenteMensagem.getChildren().addAll(remetenteLabel, conteudoMensagem, horarioLabel);
-
         return componenteMensagem;
     }
 
-    /**
-     * Cria um TextField com placeholder persistente (não some ao focar).
-     *
-     * @param placeholder Texto do placeholder.
-     * @return TextField configurado.
+        /**
+     * Enviar a APDU de tipo "JOIN" para o servidor TCP.
+     * 
+     * @param nomeGrupo Nome do grupo a ser adicionado.
      */
+    // Exemplo de envio de APDU com tratamento de exceção
+    private void enviarAPDULeave(String nomeGrupo) {
+        String nomeUsuario = app.getNomeUsuario();
+
+        try {
+            // Envio via ClienteTCP - agora utilizando o ClienteTCP configurado
+            app.getClienteTCP().enviarAPDULeave(nomeUsuario, nomeGrupo);
+        } catch (Exception e) {
+            // Exibir mensagem de erro se falhar ao enviar a APDU
+            // Label mensagemErro = new Label("Erro ao conectar ao servidor. Tente novamente.");
+            // mensagemErro.setStyle("-fx-text-fill: red; -fx-font-size: 14px;");
+            // containerAdicionarGrupo.getChildren().add(mensagemErro);
+        }
+    }
+    
+
     private TextField criarCampoComPlaceholder(String placeholder) {
         TextField campo = new TextField();
         campo.setPromptText(placeholder);
         campo.setMaxWidth(300);
         campo.setStyle("-fx-background-color: #E1E0E0; -fx-font-size: 16px");
 
-        // Listener para controlar o comportamento do placeholder
         campo.focusedProperty().addListener((obs, oldVal, newVal) -> {
             if (!newVal && campo.getText().isEmpty()) {
-                campo.setPromptText(placeholder); // Reaplica o placeholder ao perder o foco
+                campo.setPromptText(placeholder);
             } else if (newVal && campo.getText().isEmpty()) {
-                campo.setPromptText(""); // Limpa o placeholder ao focar
+                campo.setPromptText("");
             }
         });
 
