@@ -124,7 +124,8 @@ public class Principal extends Application {
                 System.err.println("Grupo não encontrado: " + grupo);
                 return;
             }
-            Mensagem novaMensagem = new Mensagem(usuario, mensagem, "07:00");
+            String horaAtual = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            Mensagem novaMensagem = new Mensagem(usuario, mensagem, horaAtual);
             historico.adicionarMensagem(novaMensagem);
 
             // Atualizar a interface gráfica na thread da aplicação

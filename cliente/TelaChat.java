@@ -97,8 +97,10 @@ public class TelaChat {
                         String mensagemFormatada = "SEND|" + nomeGrupo + "|" + app.getNomeUsuario() + "|" + mensagem;
                         app.getClienteUDP().enviarMensagem(mensagemFormatada);
 
+                        String horaAtual = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+
                         // Adiciona mensagem ao histórico
-                        Mensagem novaMensagem = new Mensagem("Voce", mensagem, "07:00");
+                        Mensagem novaMensagem = new Mensagem("Voce", mensagem, horaAtual);
                         historicoMensagens.adicionarMensagem(novaMensagem);
 
                         // Atualiza as mensagens exibidas
