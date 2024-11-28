@@ -1,3 +1,4 @@
+
 /* ***************************************************************
 * Autor............: Hugo Botelho Santana
 * Matricula........: 202210485
@@ -7,6 +8,10 @@
 * Funcao...........: Aplicativo de chat para troca de mensagens com o modelo cliente servidor
 *************************************************************** */
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,6 +25,11 @@ public class Principal extends Application {
     private String ipServidor;
     private ClienteTCP clienteTCP; // Instância do cliente TCP
     private ClienteUDP clienteUDP; // Instância do cliente UDP
+
+    private final static List<String> grupos = new ArrayList<>(); // Lista dinâmica de grupos
+    private final static Map<String, HistoricoMensagens> historicosMensagens = new HashMap<>();
+
+    private static TelaMeusGrupos telaMeusGrupos;
 
     @Override
     public void start(Stage primaryStage) {
@@ -37,6 +47,8 @@ public class Principal extends Application {
             Platform.exit();
             System.exit(0);
         });
+
+        telaMeusGrupos = new TelaMeusGrupos(this);
 
         // Mostra a tela inicial ao iniciar o programa
         TelaInicio telaInicio = new TelaInicio(this);
@@ -84,16 +96,50 @@ public class Principal extends Application {
                     String mensagemRecebida = clienteUDP.receberMensagem(); // Aguarda mensagens do servidor
                     System.out.println("Mensagem recebida via UDP: " + mensagemRecebida);
 
-                    // Processar a mensagem recebida (atualizar interface gráfica, por exemplo)
-                    Platform.runLater(() -> {
-                        // Aqui você pode delegar a mensagem recebida para a tela de chat
-                        // Exemplo: TelaChat.adicionarMensagem(mensagemRecebida);
-                    });
+                    // Criar uma thread para processar e renderizar a mensagem recebida
+                    new Thread(() -> processarMensagemRecebida(mensagemRecebida)).start();
                 }
             } catch (Exception e) {
                 System.err.println("Erro ao receber mensagem UDP: " + e.getMessage());
             }
         }).start();
+    }
+
+    private void processarMensagemRecebida(String mensagemRecebida) {
+        try {
+            // Separar os campos da mensagem
+            String[] partes = mensagemRecebida.split("\\|");
+            if (partes.length < 4 || !"SEND".equals(partes[0])) {
+                System.err.println("Formato de mensagem inválido: " + mensagemRecebida);
+                return;
+            }
+
+            String grupo = partes[1];
+            String usuario = partes[2];
+            String mensagem = partes[3];
+
+            // Adicionar a mensagem ao histórico
+            HistoricoMensagens historico = historicosMensagens.get(grupo);
+            if (historico == null) {
+                System.err.println("Grupo não encontrado: " + grupo);
+                return;
+            }
+            Mensagem novaMensagem = new Mensagem(usuario, mensagem, "07:00");
+            historico.adicionarMensagem(novaMensagem);
+
+            // Atualizar a interface gráfica na thread da aplicação
+            Platform.runLater(() -> {
+                TelaMeusGrupos telaGrupos = getTelaMeusGrupos();
+                Map<String, TelaChat> telasChat = telaGrupos.getTelasChat(); // Supondo que este método foi adicionado
+
+                TelaChat telaChat = telasChat.get(grupo);
+                if (telaChat != null) {
+                    telaChat.renderizarMensagens(); // Re-renderiza as mensagens
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Erro ao processar mensagem recebida: " + e.getMessage());
+        }
     }
 
     // Métodos getter e setter
@@ -123,6 +169,18 @@ public class Principal extends Application {
 
     public StackPane getRoot() {
         return root;
+    }
+
+    public List<String> getGrupos() {
+        return grupos;
+    }
+
+    public TelaMeusGrupos getTelaMeusGrupos() {
+        return telaMeusGrupos;
+    }
+
+    public Map<String, HistoricoMensagens> getHistoricosMensagens() {
+        return historicosMensagens;
     }
 
     /**

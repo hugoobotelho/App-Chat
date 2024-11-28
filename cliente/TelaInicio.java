@@ -69,8 +69,10 @@ public class TelaInicio {
             app.criarClientes(ipServidor, nomeUsuario);
 
             // Tenta carregar a próxima tela (Tela de Grupos)
-            TelaMeusGrupos telaMeusGrupos = new TelaMeusGrupos(app);
-            app.getRoot().getChildren().setAll(telaMeusGrupos.getLayout());
+            // TelaMeusGrupos telaMeusGrupos = new TelaMeusGrupos(app);
+            // app.getRoot().getChildren().setAll(telaMeusGrupos.getLayout());
+            app.getRoot().getChildren().setAll(app.getTelaMeusGrupos().getLayout());
+
         });
 
         VBox inputVBox = new VBox(10, campoIP, campoUsuario);

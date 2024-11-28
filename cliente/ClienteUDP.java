@@ -3,14 +3,16 @@ import java.util.Scanner;
 
 public class ClienteUDP {
     private final DatagramSocket clienteSocket;
+    private final DatagramSocket clienteSocket1;
     private final InetAddress enderecoServidor;
     private final int portaServidor;
-    private boolean escutando = true; // Controle para parar a thread de escuta
+
 
     public ClienteUDP(String ipServidor, int portaServidor) throws Exception {
         this.clienteSocket = new DatagramSocket(); // Socket para comunicação UDP
         this.enderecoServidor = InetAddress.getByName(ipServidor); // Endereço do servidor
         this.portaServidor = portaServidor;
+        this.clienteSocket1 = new DatagramSocket(9876);  // Escolha uma porta fixada
     }
 
     /**
@@ -37,11 +39,10 @@ public class ClienteUDP {
      */
     public String receberMensagem() {
         try {
-            System.out.println("Esperando mensagens dos grupos");
+
             byte[] dadosRecebidos = new byte[1024];
             DatagramPacket pacoteRecebido = new DatagramPacket(dadosRecebidos, dadosRecebidos.length);
-            clienteSocket.receive(pacoteRecebido); // Bloqueia até receber um pacote
-            System.out.println("Recebe um pacote");
+            clienteSocket1.receive(pacoteRecebido); // Bloqueia até receber um pacote
             return new String(pacoteRecebido.getData(), 0, pacoteRecebido.getLength());
         } catch (Exception e) {
             e.printStackTrace();
@@ -54,7 +55,7 @@ public class ClienteUDP {
      * Fecha o socket do cliente e para a escuta.
      */
     public void fechar() {
-        escutando = false; // Para a thread de escuta
+        // escutando = false; // Para a thread de escuta
         clienteSocket.close();
     }
 }

@@ -79,14 +79,13 @@ public class ServidorUDP {
 
                     // Reencaminha a mensagem para todos os membros do grupo, exceto o remetente
                     for (Usuario usuario : grupoManager.obterMembros(nomeGrupo)) {
-                        System.out.println("Vai enviar " + conteudoMensagem + " para o usuario: " + usuario.getNome());
-                        // if (!usuario.equals(remetente)) {
+                        if (!usuario.equals(remetente)) {
                         InetAddress enderecoCliente = usuario.getEndereco();
                         int portaCliente = usuario.getPorta();
                         byte[] dadosSaida = String.format("SEND|%s|%s|%s", nomeGrupo, nomeUsuario, conteudoMensagem).getBytes();
-                        DatagramPacket pacoteResposta = new DatagramPacket(dadosSaida, dadosSaida.length, enderecoCliente, portaCliente);
+                        DatagramPacket pacoteResposta = new DatagramPacket(dadosSaida, dadosSaida.length, enderecoCliente, 9876);
                         servidorSocket.send(pacoteResposta);
-                        // }
+                        }
                     }
                 } else {
                     System.err.println("Tipo de mensagem desconhecido: " + tipoMensagem);

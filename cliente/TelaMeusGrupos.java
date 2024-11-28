@@ -26,13 +26,21 @@ public class TelaMeusGrupos {
     private VBox layout = new VBox(20); // Layout principal da tela Meus Grupos
     private VBox containerAdicionarGrupo; // Container que será exibido para adicionar um grupo
     private VBox grupoContainer; // Container interno para os grupos
-    private static List<String> grupos = new ArrayList<>(); // Lista dinâmica de grupos
-    private static Map<String, HistoricoMensagens> historicosMensagens = new HashMap<>();
+    // private static List<String> grupos = new ArrayList<>(); // Lista dinâmica de
+    // grupos
+    // private static Map<String, HistoricoMensagens> historicosMensagens = new
+    // HashMap<>();
+    private static List<String> grupos;
+    private static Map<String, HistoricoMensagens> historicosMensagens;
+
+    private static Map<String, TelaChat> telasChat = new HashMap<>();
 
     private Principal app; // Instância principal do aplicativo
 
     public TelaMeusGrupos(Principal app) {
         this.app = app;
+        this.grupos = app.getGrupos();
+        this.historicosMensagens = app.getHistoricosMensagens();
 
         layout.setStyle("-fx-padding: 20; -fx-alignment: top-left;");
 
@@ -93,7 +101,7 @@ public class TelaMeusGrupos {
         botaoEntrar.setOnAction(e -> {
             String nomeGrupo = inputNomeGrupo.getText().trim();
             if (!nomeGrupo.isEmpty()) {
-                if (grupos.contains(nomeGrupo)) { // Verifica se o grupo já existe
+                if (app.getGrupos().contains(nomeGrupo)) { // Verifica se o grupo já existe
                     // Exibe um alerta ou mensagem de erro
                     Label mensagemErro = new Label("O grupo ja existe!");
                     mensagemErro.setStyle("-fx-text-fill: red; -fx-font-size: 14px;");
@@ -158,16 +166,29 @@ public class TelaMeusGrupos {
                             "-fx-cursor: hand; " +
                             "-fx-alignment: center-left;");
             grupoBotao.setOnAction(e -> {
-                // Carregar o histórico de mensagens do grupo
-                HistoricoMensagens historicoMensagens = historicosMensagens.get(grupo);
+                TelaChat telaChat;
 
-                // Mostrar a tela de chat com as mensagens do grupo
-                TelaChat telaChat = new TelaChat(app, grupo, historicoMensagens);
+                // Verifica se já existe uma instância de TelaChat para o grupo
+                if (telasChat.containsKey(grupo)) {
+                    telaChat = telasChat.get(grupo);
+                } else {
+                    // Cria uma nova instância de TelaChat e armazena no mapa
+                    telaChat = new TelaChat(app, grupo, historicosMensagens.get(grupo));
+                    telasChat.put(grupo, telaChat);
+                }
+
+                // Exibe a tela do chat
                 app.getRoot().getChildren().setAll(telaChat.getLayout());
             });
+
             grupoContainer.getChildren().add(grupoBotao);
         }
     }
+
+    public Map<String, TelaChat> getTelasChat() {
+        return telasChat;
+    }
+    
 
     /**
      * Método para remover um grupo da lista e atualizar a interface.
@@ -177,6 +198,7 @@ public class TelaMeusGrupos {
     public static void removerGrupo(String grupo) {
         grupos.remove(grupo); // Remove o grupo da lista
         historicosMensagens.remove(grupo);
+        telasChat.remove(grupo); // Remove a instância de TelaChat associada
     }
 
     /**
