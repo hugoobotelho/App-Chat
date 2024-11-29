@@ -1,3 +1,12 @@
+/* ***************************************************************
+* Autor............: Hugo Botelho Santana
+* Matricula........: 202210485
+* Inicio...........: 21/11/2024
+* Ultima alteracao.: 28/11/2024
+* Nome.............: Camada de Transporte/Aplicação - Aplicativo de Instant Messaging
+* Funcao...........: Aplicativo de chat para troca de mensagens com o modelo cliente servidor
+*************************************************************** */
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -71,7 +80,7 @@ public class TelaChat {
         ScrollPane scrollMensagens = new ScrollPane(listaMensagens);
         scrollMensagens.setStyle("-fx-background: #F5F5F5; -fx-border-color: #F5F5F5;");
         scrollMensagens.setFitToWidth(true);
-        scrollMensagens.setPrefHeight(600);
+        scrollMensagens.setPrefHeight(500);
 
         // Campo para Envio de Mensagens
         HBox enviarMensagemLayout = new HBox(10);

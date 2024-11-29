@@ -3,7 +3,7 @@
 * Autor............: Hugo Botelho Santana
 * Matricula........: 202210485
 * Inicio...........: 21/11/2024
-* Ultima alteracao.: 21/11/2024
+* Ultima alteracao.: 28/11/2024
 * Nome.............: Camada de Transporte/Aplicação - Aplicativo de Instant Messaging
 * Funcao...........: Aplicativo de chat para troca de mensagens com o modelo cliente servidor
 *************************************************************** */
@@ -33,7 +33,7 @@ public class Principal extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Scene scene = new Scene(root, 390, 744);
+        Scene scene = new Scene(root, 390, 644);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Aplicativo de Instant Messaging");
         primaryStage.setResizable(false);
